@@ -1,0 +1,265 @@
+Très bien, ajoutons les signes (+) pour les gains et (-) pour les pertes dans les éléments textuels des cases de revue rapide et de la liste des transactions récentes.
+
+Voici le code mis à jour :
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RaiseYourBankroll</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .navbar {
+            background-color: #333;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .summary div {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 30%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .positive {
+            color: green;
+        }
+
+        .negative {
+            color: red;
+        }
+
+        .chart-container {
+            width: calc(50% - 20px);
+            margin: 20px 10px;
+            display: inline-block;
+        }
+
+        .transactions-list {
+            margin-top: 20px;
+        }
+
+        .transactions-list h2 {
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+
+        .transaction {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>RaiseYourBankroll - Dashboard</h1>
+    </header>
+
+    <div class="navbar">
+        <a href="/dashboard">Tableau de Bord</a>
+        <a href="/transactions">Transactions</a>
+        <a href="/reports">Rapports</a>
+        <a href="/profile">Profil</a>
+    </div>
+
+    <div class="container">
+        <div class="summary">
+            <div>
+                <h2>Gains Totaux</h2>
+                <p id="totalGains" class="positive">€0.00</p>
+            </div>
+            <div>
+                <h2>Pertes Totales</h2>
+                <p id="totalLosses" class="negative">€0.00</p>
+            </div>
+            <div>
+                <h2>Solde Net</h2>
+                <p id="netBalance">€0.00</p>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="distributionChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="evolutionChart"></canvas>
+        </div>
+
+        <div class="transactions-list">
+            <h2>Transactions Récentes</h2>
+            <div id="recentTransactions"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const transactions = [
+            { date: '2022-10-01', type: 'gain', amount: 100, description: 'Win Poker' },
+            { date: '2022-10-02', type: 'perte', amount: 50, description: 'Lost Bet' },
+            { date: '2022-10-03', type: 'gain', amount: 200, description: 'Tournament Victory' },
+            { date: '2022-10-04', type: 'perte', amount: 25, description: 'Expense' }
+        ];
+
+        function calculateSummary() {
+            const totalGains = transactions.filter(tx => tx.type === 'gain').reduce((acc, tx) => acc + tx.amount, 0);
+            const totalLosses = transactions.filter(tx => tx.type === 'perte').reduce((acc, tx) => acc + tx.amount, 0);
+            const netBalance = totalGains - totalLosses;
+
+            document.getElementById('totalGains').textContent = `+ €${totalGains.toFixed(2)}`;
+            document.getElementById('totalLosses').textContent = `- €${totalLosses.toFixed(2)}`;
+            document.getElementById('netBalance').textContent = `${netBalance >= 0 ? '+' : '-'} €${Math.abs(netBalance).toFixed(2)}`;
+
+            // Apply color classes
+            document.getElementById('totalGains').className = totalGains >= 0 ? 'positive' : 'negative';
+            document.getElementById('totalLosses').className = totalLosses >= 0 ? 'negative' : 'positive';
+            document.getElementById('netBalance').className = netBalance >= 0 ? 'positive' : 'negative';
+        }
+
+        function renderDistributionChart() {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            const gainTotal = transactions.filter(tx => tx.type === 'gain').reduce((acc, tx) => acc + tx.amount, 0);
+            const perteTotal = transactions.filter(tx => tx.type === 'perte').reduce((acc, tx) => acc + tx.amount, 0);
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Gains', 'Pertes'],
+                    datasets: [{
+                        data: [gainTotal, perteTotal],
+                        backgroundColor: ['#4CAF50', '#FF0000'],
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        function renderEvolutionChart() {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            const labels = transactions.map(tx => tx.date);
+            const bankrollData = transactions.reduce((acc, tx) => {
+                const lastValue = acc.length > 0 ? acc[acc.length - 1] : 0;
+                const newValue = tx.type === 'gain' ? lastValue + tx.amount : lastValue - tx.amount;
+                acc.push(newValue);
+                return acc;
+            }, []);
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Évolution de la Bankroll',
+                        data: bankrollData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true
+                    }
+                }
+            });
+        }
+
+        function renderRecentTransactions() {
+            document.getElementById('recentTransactions').innerHTML = transactions.slice(-5).reverse().map(tx => (
+                `<div class="transaction">
+                    <div>${tx.date}</div>
+                    <div class="${tx.type === 'gain' ? 'positive' : 'negative'}">${tx.type === 'gain' ? '+' : '-'} €${tx.amount.toFixed(2)}</div>
+                    <div>${tx.description}</div>
+                </div>`
+            )).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateSummary();
+            renderDistributionChart();
+            renderEvolutionChart();
+            renderRecentTransactions();
+        });
+    </script>
+</body>
+
+</html>
+```
+
+### Modifications Apportées :
+
+1. **Ajout de signes (+) et (-)** :
+   - Les valeurs de gains totaux, pertes totales et solde net affichent maintenant explicitement des signes (+) ou (-).
+   - Les transactions récentes affichent également des signes (+) ou (-) en fonction de leur type.
+
+2. **Classes CSS Conditionnelles** :
+   - Utilisation des classes `positive` et `negative` pour styliser respectivement les montants positifs et négatifs.
+
+3. **Révision de la logique JavaScript** :
+   - La fonction `calculateSummary` gère désormais l'ajout de signes et l'application des classes de style appropriées pour les éléments de résumé.
+
+Ces changements devraient répondre à votre besoin d'afficher des gains positifs en vert avec un signe (+) et des pertes négatives en rouge avec un signe (-). Si vous avez d'autres ajustements ou fonctionnalités à ajouter, indiquez-le-moi!
